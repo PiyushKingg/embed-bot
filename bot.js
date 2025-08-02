@@ -7,6 +7,15 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
+// Debug line to check TOKEN loading
+const token = process.env.TOKEN;
+console.log("DEBUG TOKEN:", token ? "✅ Loaded" : "❌ Missing");
+
+if (!token) {
+  console.error("❌ No TOKEN provided.");
+  process.exit(1);
+}
+
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
   const PORT = parseInt(process.env.PORT, 10) || 3000;
@@ -25,8 +34,4 @@ app.post('/send-embed', async (req, res) => {
   }
 });
 
-if (!process.env.TOKEN) {
-  console.error('❌ No TOKEN provided.');
-  process.exit(1);
-}
-client.login(process.env.TOKEN);
+client.login(token);
