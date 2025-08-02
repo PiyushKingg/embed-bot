@@ -1,20 +1,18 @@
+// bot.js
 require('dotenv').config();
 const { Client, GatewayIntentBits } = require('discord.js');
 const app = require('./server');
 
-// Create Discord client
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 
-// When bot is ready
 client.once('ready', () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
-  // Dashboard will serve on port 3000
-  app.listen(3000, () => console.log('🌐 Dashboard running on port 3000'));
+  const PORT = parseInt(process.env.PORT, 10) || 3000;
+  app.listen(PORT, () => console.log(`🌐 Dashboard running on port ${PORT}`));
 });
 
-// Endpoint to receive embed data and post to Discord
 app.post('/send-embed', async (req, res) => {
   const { channelId, embeds } = req.body;
   try {
@@ -27,4 +25,8 @@ app.post('/send-embed', async (req, res) => {
   }
 });
 
+if (!process.env.TOKEN) {
+  console.error('❌ No TOKEN provided.');
+  process.exit(1);
+}
 client.login(process.env.TOKEN);
