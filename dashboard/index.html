@@ -1,1 +1,83 @@
+<!-- dashboard/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Embed Dashboard</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #1e1e2f; color: #eee; }
+    .embed-box { border: 1px solid #444; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #2b2b3d; }
+    input, textarea { width: 100%; margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #2e2e3f; color: #fff; }
+    button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background: #3b82f6; color: #fff; }
+  </style>
+</head>
+<body>
+  <h1>Embed Dashboard</h1>
+  <form id="embedForm">
+    <label>Channel ID:</label>
+    <input type="text" id="channelId" placeholder="Discord Channel ID" required />
+    <div id="embeds"></div>
+    <button type="submit">Send Embeds</button>
+  </form>
+  <script>
+    for (let i = 1; i <= 4; i++) {
+      const box = document.createElement('div');
+      box.className = 'embed-box';
+      box.innerHTML = `
+        <h2>Embed ${i}</h2>
+        <input name="title" placeholder="Title" />
+        <textarea name="description" placeholder="Description"></textarea>
+        <input name="color" placeholder="Color (hex, e.g. #00ff00)" />
+        <h3>Author</h3>
+        <input name="authorName" placeholder="Author Name" />
+        <input name="authorIcon" placeholder="Author Icon URL" />
+        <h3>Footer</h3>
+        <input name="footerText" placeholder="Footer Text" />
+        <input name="footerIcon" placeholder="Footer Icon URL" />
+        <h3>Images</h3>
+        <input name="thumbnail" placeholder="Thumbnail URL" />
+        <input name="image" placeholder="Image URL" />
+      `;
+      document.getElementById('embeds').appendChild(box);
+    }
 
+    document.getElementById('embedForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const channelId = document.getElementById('channelId').value.trim();
+      const embeds = Array.from(document.querySelectorAll('.embed-box')).map(box => {
+        const colorHex = box.querySelector('input[name="color"]').value.replace('#', '');
+        const em = {
+          title: box.querySelector('input[name="title"]').value,
+          description: box.querySelector('textarea[name="description"]').value,
+          color: colorHex ? parseInt(colorHex, 16) : undefined,
+          author: {
+            name: box.querySelector('input[name="authorName"]').value,
+            icon_url: box.querySelector('input[name="authorIcon"]').value
+          },
+          footer: {
+            text: box.querySelector('input[name="footerText"]').value,
+            icon_url: box.querySelector('input[name="footerIcon"]').value
+          },
+          thumbnail: { url: box.querySelector('input[name="thumbnail"]').value },
+          image: { url: box.querySelector('input[name="image"]').value }
+        };
+        for (const k in em) {
+          if (em[k] && typeof em[k] === 'object') {
+            Object.keys(em[k]).forEach(sub => !em[k][sub] && delete em[k][sub]);
+            if (!Object.keys(em[k]).length) delete em[k];
+          } else if (!em[k]) delete em[k];
+        }
+        return em;
+      }).filter(e => Object.keys(e).length);
+
+      const res = await fetch('/send-embed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channelId, embeds }),
+      });
+      alert(await res.text());
+    });
+  </script>
+</body>
+</html>
+```0
