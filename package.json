@@ -1,6 +1,5 @@
-// package.json
 {
-  "name": "embed-bot",
+  "name": "my own bot",
   "version": "1.0.0",
   "main": "bot.js",
   "scripts": {
