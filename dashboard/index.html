@@ -1,33 +1,45 @@
-<!-- dashboard/index.html -->
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Embed Dashboard</title>
+  <title>Dynamic Embed Dashboard</title>
   <style>
     body { font-family: sans-serif; padding: 20px; background: #1e1e2f; color: #eee; }
-    .embed-box { border: 1px solid #444; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #2b2b3d; }
+    .embed-box { border: 1px solid #444; padding: 15px; margin-bottom: 20px; border-radius: 8px; background: #2b2b3d; position: relative; }
+    .embed-box h2 { margin: 0 0 10px; }
+    .remove-btn { position: absolute; top: 10px; right: 10px; background: #e11d48; border: none; color: #fff; padding: 4px 8px; cursor: pointer; border-radius: 4px; }
     input, textarea { width: 100%; margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid #555; background: #2e2e3f; color: #fff; }
-    button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background: #3b82f6; color: #fff; }
+    button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; background: #3b82f6; color: #fff; margin-right: 10px; }
   </style>
 </head>
 <body>
-  <h1>Embed Dashboard</h1>
-  <form id="embedForm">
-    <label>Channel ID:</label>
-    <input type="text" id="channelId" placeholder="Discord Channel ID" required />
-    <div id="embeds"></div>
-    <button type="submit">Send Embeds</button>
-  </form>
+  <h1>Dynamic Embed Dashboard</h1>
+  <label>Channel ID:</label>
+  <input type="text" id="channelId" placeholder="Discord Channel ID" required />
+
+  <div id="embedsContainer"></div>
+
+  <button id="addEmbedBtn">+ Add Embed</button>
+  <button id="sendEmbedsBtn">Send Embeds</button>
+
   <script>
-    for (let i = 1; i <= 4; i++) {
+    const container = document.getElementById('embedsContainer');
+    const addBtn = document.getElementById('addEmbedBtn');
+    const sendBtn = document.getElementById('sendEmbedsBtn');
+
+    let embedCount = 0;
+
+    function createEmbedBox() {
+      embedCount++;
       const box = document.createElement('div');
       box.className = 'embed-box';
+      box.dataset.id = embedCount;
       box.innerHTML = `
-        <h2>Embed ${i}</h2>
+        <button class="remove-btn">×</button>
+        <h2>Embed ${embedCount}</h2>
         <input name="title" placeholder="Title" />
         <textarea name="description" placeholder="Description"></textarea>
-        <input name="color" placeholder="Color (hex, e.g. #00ff00)" />
+        <input name="color" placeholder="Color (hex)" />
         <h3>Author</h3>
         <input name="authorName" placeholder="Author Name" />
         <input name="authorIcon" placeholder="Author Icon URL" />
@@ -38,35 +50,44 @@
         <input name="thumbnail" placeholder="Thumbnail URL" />
         <input name="image" placeholder="Image URL" />
       `;
-      document.getElementById('embeds').appendChild(box);
+      // remove button
+      box.querySelector('.remove-btn').onclick = () => box.remove();
+      container.appendChild(box);
     }
 
-    document.getElementById('embedForm').addEventListener('submit', async e => {
-      e.preventDefault();
+    // Add first embed box on load
+    createEmbedBox();
+
+    addBtn.onclick = () => createEmbedBox();
+
+    sendBtn.onclick = async () => {
       const channelId = document.getElementById('channelId').value.trim();
-      const embeds = Array.from(document.querySelectorAll('.embed-box')).map(box => {
-        const colorHex = box.querySelector('input[name="color"]').value.replace('#', '');
+      const boxes = Array.from(container.querySelectorAll('.embed-box'));
+      const embeds = boxes.map(box => {
+        const get = name => box.querySelector(`[name="${name}"]`).value;
+        const colorHex = get('color').replace('#', '');
         const em = {
-          title: box.querySelector('input[name="title"]').value,
-          description: box.querySelector('textarea[name="description"]').value,
+          title: get('title'),
+          description: get('description'),
           color: colorHex ? parseInt(colorHex, 16) : undefined,
           author: {
-            name: box.querySelector('input[name="authorName"]').value,
-            icon_url: box.querySelector('input[name="authorIcon"]').value
+            name: get('authorName'),
+            icon_url: get('authorIcon')
           },
           footer: {
-            text: box.querySelector('input[name="footerText"]').value,
-            icon_url: box.querySelector('input[name="footerIcon"]').value
+            text: get('footerText'),
+            icon_url: get('footerIcon')
           },
-          thumbnail: { url: box.querySelector('input[name="thumbnail"]').value },
-          image: { url: box.querySelector('input[name="image"]').value }
+          thumbnail: { url: get('thumbnail') },
+          image: { url: get('image') }
         };
-        for (const k in em) {
-          if (em[k] && typeof em[k] === 'object') {
+        // remove empty fields
+        Object.keys(em).forEach(k => {
+          if (typeof em[k] === 'object') {
             Object.keys(em[k]).forEach(sub => !em[k][sub] && delete em[k][sub]);
             if (!Object.keys(em[k]).length) delete em[k];
           } else if (!em[k]) delete em[k];
-        }
+        });
         return em;
       }).filter(e => Object.keys(e).length);
 
@@ -76,8 +97,7 @@
         body: JSON.stringify({ channelId, embeds }),
       });
       alert(await res.text());
-    });
+    };
   </script>
 </body>
 </html>
-```0
